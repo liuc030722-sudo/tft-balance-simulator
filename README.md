@@ -335,10 +335,6 @@ Equipment remains deferred. None of these roadmap items should be read as an imp
 
 ## Security and Attribution / 安全与归属
 
-Never commit `.env`, credentials, private keys, machine-specific paths, local database backups or the virtual environment. Four reviewed notebooks are included; additional notebooks and local datasets are ignored by default.
-
-不要提交真实密码、密钥、本机个人路径、数据库备份或虚拟环境。当前包含四份经过只读检查的Notebook；其他Notebook和本地数据默认忽略。
-
 This is an unofficial personal research project. TFT game data remains Riot Games' intellectual property. Riot Games does not endorse or sponsor this project. A future code license does not relicense third-party data or assets.
 
 本项目是非官方个人研究项目。TFT 游戏数据与相关资产的权利归 Riot Games 等对应权利方所有；本项目不受 Riot Games 背书或赞助。未来如为原创代码添加许可证，不代表第三方数据和资产一并重新授权。

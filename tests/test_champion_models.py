@@ -15,6 +15,7 @@ def record():
         "hp": 100.0, "attack_damage": 10.0, "attack_speed": 0.5,
         "armor": 10.0, "magic_resist": 10.0, "attack_range": 1.0,
         "initial_mana": 5.0, "max_mana": 50.0,
+        "crit_chance": 0.0, "crit_multiplier": 1.0,
     }
 
 
@@ -71,3 +72,20 @@ def test_invalid_source_stats_are_rejected(record, changes):
     # 在模型入口阻止无效属性，不额外假定版本相关的攻速上限。
     with pytest.raises(ValueError):
         ChampionStats.from_record({**record, **changes})
+
+
+@pytest.mark.parametrize("changes", [
+    {"crit_chance": -0.1}, {"crit_chance": 1.1}, {"crit_chance": float("nan")},
+    {"crit_multiplier": 0.5}, {"crit_multiplier": float("inf")},
+])
+def test_invalid_critical_source_stats(record, changes):
+    # 源字段语义限制与当前独立逐击暴击模型一致，不虚构额外转换规则。
+    with pytest.raises(ValueError):
+        ChampionStats.from_record({**record, **changes})
+
+
+def test_missing_database_critical_field_is_not_filled(record):
+    # 直接构造对象的测试默认值不能被用来补造缺失的真实数据库属性。
+    del record["crit_chance"]
+    with pytest.raises(KeyError):
+        ChampionStats.from_record(record)

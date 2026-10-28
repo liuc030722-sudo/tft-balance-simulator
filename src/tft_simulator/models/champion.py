@@ -20,12 +20,16 @@ class ChampionStats:
     attack_range: float
     initial_mana: float
     max_mana: float
+    # 直接构造的默认值表示无暴击测试基线；数据库转换必须读取真实字段。
+    crit_chance: float = 0.0
+    crit_multiplier: float = 1.0
 
     def __post_init__(self) -> None:
         # 这是引擎输入边界，不将缺失值/无穷值当成可用战斗属性。
         values = (
             self.max_hp, self.attack_damage, self.attack_speed, self.armor,
             self.magic_resist, self.attack_range, self.initial_mana, self.max_mana,
+            self.crit_chance, self.crit_multiplier,
         )
         if not all(math.isfinite(value) for value in values):
             raise ValueError("Champion stats must be finite")
@@ -33,6 +37,8 @@ class ChampionStats:
             raise ValueError("HP, attack speed, and range must be positive")
         if self.attack_damage < 0 or not 0 <= self.initial_mana <= self.max_mana:
             raise ValueError("Invalid attack damage or mana range")
+        if not 0 <= self.crit_chance <= 1 or self.crit_multiplier < 1:
+            raise ValueError("Invalid critical chance or multiplier")
 
     @classmethod
     def from_record(cls, record: Mapping[str, Any]) -> "ChampionStats":
@@ -45,6 +51,8 @@ class ChampionStats:
             magic_resist=float(record["magic_resist"]),
             attack_range=float(record["attack_range"]),
             initial_mana=float(record["initial_mana"]), max_mana=float(record["max_mana"]),
+            crit_chance=float(record["crit_chance"]),
+            crit_multiplier=float(record["crit_multiplier"]),
         )
 
 
@@ -78,3 +86,14 @@ class CombatState:
         damage_taken = min(amount, self._current_hp)
         self._current_hp = max(0.0, self._current_hp - damage_taken)
         return damage_taken
+
+    def heal(self, amount: float) -> float:
+        # 治疗不是负伤害；限制在最大生命内，死亡后不能借治疗复活。
+        if not math.isfinite(amount) or amount < 0:
+            raise ValueError("Healing must be finite and nonnegative")
+        if not self.is_alive:
+            return 0.0
+        before = self._current_hp
+        restored = min(amount, self.stats.max_hp - before)
+        self._current_hp = min(self.stats.max_hp, before + restored)
+        return self._current_hp - before

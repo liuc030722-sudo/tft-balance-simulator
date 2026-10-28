@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 # 模型规则不是已核验的Patch 14.1客户端时间实现。
 TIMING_MODEL_VERSION = "fixed_rate_v0.1_unverified"
+DYNAMIC_TIMING_MODEL_VERSION = "preserve_remaining_attack_progress_v0.1_simplified"
 _MAX_TIMELINE_EVENTS = 100_000
 
 
@@ -48,6 +49,19 @@ def attack_interval(
 ) -> float:
     # 间隔（秒/次）=1÷攻速（次/秒）；保留完整浮点精度。
     return 1.0 / effective_attack_speed(attack_speed, rules=rules)
+
+
+def reschedule_attack(next_time: float, current_time: float,
+                      old_speed: float, new_speed: float) -> float:
+    # 保留已完成的攻击进度：剩余时间随新旧攻速比例缩放，不从头等待。
+    if not all(math.isfinite(v) for v in (next_time, current_time, old_speed, new_speed)):
+        raise ValueError("Attack scheduling inputs must be finite")
+    if current_time < 0 or next_time <= current_time or old_speed <= 0 or new_speed <= 0:
+        raise ValueError("Invalid pending attack or speed")
+    result = current_time + (next_time - current_time) * (old_speed / new_speed)
+    if not math.isfinite(result) or result <= current_time:
+        raise RuntimeError("Rescheduled attack time cannot advance at float precision")
+    return result
 
 
 def attack_times(

@@ -2,6 +2,8 @@
 
 引擎标识：`basic_duel_v0.1`。这是使用真实源属性的简化普通攻击基线，不是完整TFT客户端复现。用户已确认Notebook完整战斗摘要、23条日志及5秒超时结果正确；见phase4-validation.md。
 
+本文保留Phase 4基线说明。Phase 5引擎升级为basic_duel_v0.2，默认关闭暴击仍保持原数值；enable_crit=True和整数seed可启用暴击，新增暴击计数与日志字段。详见critical-strikes.md。
+
 ## 接口
 
 `run_duel(stats_a, stats_b, max_duration=60.0, timing_rules=None, max_events=100000)`

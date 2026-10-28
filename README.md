@@ -6,7 +6,7 @@ A personal Python project that turns versioned TFT data into a PostgreSQL-backed
 
 一个从真实 TFT 数据出发，结合 **Python、PostgreSQL、数学建模与自动化测试** 的个人项目。目前已实现可复现的普通攻击 1v1 基线，正在逐步扩展统计分析能力。
 
-**Current milestone / 当前进度：Phase 4 simplified combat baseline completed · 普通攻击基线已验收**
+**Current milestone / 当前进度：Phase 4 baseline accepted; Phase 5 declared subset validated; awaiting acceptance · 当前简化范围工程验收通过，待阶段确认**
 
 > This is a simplified research model, not a full TFT client reproduction. Model outputs are not ranked win rates or official Riot Games balance conclusions.
 >
@@ -20,14 +20,14 @@ A personal Python project that turns versioned TFT data into a PostgreSQL-backed
 | 2 | Versioned champion data / 真实英雄数据采集与整理 | Complete for the selected cohort / 当前样本已完成 |
 | 3 | PostgreSQL schema, import and access / 数据库、导入与数据访问 | Simplified scope complete / 精简范围已完成 |
 | 4 | Event-driven ordinary-attack duels / 事件驱动普通攻击战斗 | Baseline accepted / 基线已验收 |
-| 5 | Reproducible randomness and selected skills / 可复现随机性与可核验技能 | Planned / 待开发 |
+| 5 | Reproducible randomness and selected skills / 可复现随机性与可核验技能 | Seeded criticals, experimental mana, Annie active and simplified Olaf passive / 暴击、实验回蓝、Annie主动及Olaf简化被动已实现 |
 | 6–7 | Monte Carlo and balance analytics / 蒙特卡洛与平衡性分析 | Planned / 待开发 |
 | 8 | Streamlit application / 交互应用 | Planned / 待开发 |
 | 9–10 | Engineering and portfolio presentation / 工程完善与项目展示 | Planned / 待完善 |
 
-**Last verified / 最近验证：106 tests passed with local database tests enabled.** The default offline run passes 90 tests and skips 16 database tests.
+**Last verified / 最近验证：235 tests passed with local database tests enabled.** The default offline run passes 219 tests and skips 16 database tests.
 
-最近完整本地测试为 **106 项通过**；默认不连接数据库时为 **90 项通过、16 项跳过**。这些是本地执行记录，尚未配置 GitHub Actions CI。
+最近完整本地测试为 **235 项通过**；默认不连接数据库时为 **219 项通过、16 项跳过**。这些是本地执行记录，尚未配置 GitHub Actions CI。
 
 ## Key Features / 已实现功能
 
@@ -36,12 +36,18 @@ A personal Python project that turns versioned TFT data into a PostgreSQL-backed
 - **Reusable data access / 可复用数据访问** — Transactional CSV import, read-only queries, a query CLI and explicit champion-maintenance CRUD. 支持导入、筛选和受控维护。
 - **Independent battle state / 独立战斗状态** — Immutable source attributes and fresh state for every duel. 每场战斗独立，不覆盖数据库中的真实属性。
 - **Event-driven combat / 事件驱动战斗** — Fixed-rate attacks, simultaneous batches, death, double knockout and timeout draws. 支持完整普通攻击流程。
-- **Structured logs / 结构化日志** — Timestamps, actors, damage, remaining HP and initial mana snapshots. 可在 Notebook 中查看明细。
+- **Structured logs / 结构化日志** — Timestamps, actors, damage, remaining HP and mana snapshots. 可在 Notebook 中查看明细。
+- **Experimental attack mana / 实验性普攻回蓝** — Explicit per-attack parameter and source mana caps. 显式配置实验回蓝量，保留法力上限。
+- **Optional seeded critical strikes / 可选暴击与种子** — Local per-battle RNG, replayable logs and critical-hit counts. 默认关闭以保留Phase 4基线；启用时显式提供整数种子。
+- **Simplified Annie active / Annie简化主动** — Source-backed single-target magic damage on full mana; passive and cast timing omitted. 满蓝触发单体魔法伤害，不模拟被动与施法动作。
+- **Simplified Olaf passive / Olaf简化被动** — Source-backed healing and missing-health attack speed; pending attacks preserve progress. 保留回血与攻速源参数，按简化规则动态调整排期。
+- **Explicit combat profiles / 显式战斗配置** — A shared loading and duel interface records source provenance and omitted mechanics; unsupported skills never silently fall back. 统一入口记录来源与缺失机制，未支持技能明确报错。
+- **Experimental ability power / 法强效果实验** — Independent percent configurations scale Annie active damage or Olaf healing without overwriting source values. 独立配置按比例缩放指定效果，不代表完整客户端法强公式。
 - **Automated tests / 自动化测试** — Offline tests and opt-in local PostgreSQL integration tests. 验证数学模型、状态边界与数据库行为。
 
-Skills, passives, critical strikes, Monte Carlo batches, balance charts and Streamlit are **not implemented yet**. Equipment, trait/Headliner bonuses and star scaling remain deferred.
+Other champion skills, remaining passive effects, Monte Carlo batches, balance charts and Streamlit are **not implemented yet**. Equipment, trait/Headliner bonuses and star scaling remain deferred.
 
-**尚未实现：**技能执行、被动、暴击、批量蒙特卡洛、平衡分析图表及 Streamlit。装备、羁绊、赛季之星与升星计算暂缓。
+**尚未实现：**其他英雄技能、剩余被动效果、批量蒙特卡洛、平衡分析图表及 Streamlit。装备、羁绊、赛季之星与升星计算暂缓。
 
 ## Research Questions / 研究问题
 
@@ -250,9 +256,9 @@ The full duel produces 23 structured event records. This comparison does not est
 - **Termination / 结束：** stop on death; surviving sides at the deadline draw. 死亡结束，到时双方仍存活则平局，不比较剩余HP判胜。
 - **Logging / 日志：** record raw damage, post-resistance damage and actual HP removed separately. 区分原始伤害、抗性后伤害与实际扣血。
 
-Rows in the same attack batch show the same post-batch HP snapshot. Mana is initialized and logged but does not increase or trigger skills.
+Rows in the same attack batch show the same post-batch HP snapshot. Optional attack mana is awarded to surviving attackers after batch damage; the amount is an explicit experimental assumption. With an explicit simplified ability configured, full mana triggers an instant cast after attack damage and mana gain; otherwise it remains full.
 
-同批日志显示相同的结算后生命值快照。法力目前仅初始化和记录，不获取法力或触发技能。
+同批日志显示相同的结算后生命值快照。可选回蓝发生在同批伤害后，仅存活攻击者回蓝；回复量是显式实验假设。配置简化技能时满蓝触发瞬时施法，否则保持满蓝。详见[回蓝模型](docs/attack-mana.md)与[Annie主动模型](docs/annie-active.md)。
 
 ## Mathematical Models / 数学模型
 
@@ -293,7 +299,7 @@ Offline / 默认离线测试：
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-Expected / 预期：**90 passed, 16 skipped**.
+Expected / 预期：**219 passed, 16 skipped**.
 
 Full local suite, after PostgreSQL setup and source import / 完成本地数据库与数据导入后：
 
@@ -303,26 +309,28 @@ $env:TFT_TEST_DATABASE = '1'
 Remove-Item Env:TFT_TEST_DATABASE
 ```
 
-Last verified / 最近验证：**106 passed**. Database-maintenance tests operate on `TEST_ONLY_` fixtures inside forced-rollback transactions; the real cohort remains unchanged.
+Last verified / 最近验证：**235 passed**. Database-maintenance tests operate on `TEST_ONLY_` fixtures inside forced-rollback transactions; the real cohort remains unchanged.
 
 数据库维护测试只操作事务中的人工测试记录，并强制回滚，不修改正式英雄数据。尚未配置自动CI，不能把本地通过记录当作GitHub Actions状态。
 
 ## Limitations and Roadmap / 限制与后续计划
 
-The model currently assumes fixed stats, constant attack speed and both units always being in attack range. It omits skills, passives, critical strikes, movement, cast timing and projectile travel. Source star-level semantics remain unresolved; no higher-star values are generated. Deterministic repetitions add no Monte Carlo information.
+The model assumes fixed source stats and both units always in range; attack speed stays constant unless the simplified Olaf passive is enabled. Critical strikes are optional and require an explicit integer seed. Annie’s simplified active and Olaf’s on-attack healing are implemented; other skill effects, movement, cast timing and projectile travel remain absent. Olaf’s missing-health attack speed uses an explicit simplified progress rule. Source star-level semantics remain unresolved; no higher-star values are generated. With critical strikes disabled, repeated identical duels add no Monte Carlo information.
 
-当前假设固定属性、固定攻速和始终在射程内；不模拟技能、被动、暴击、移动、施法时序与弹道。源属性的星级语义仍待核验，不生成高星数据。当前无随机机制，重复同一战斗不会增加蒙特卡洛信息。
+当前使用固定源属性并假设始终在射程内；开启Olaf简化被动时攻速随缺血变化；暴击可选开启并要求整数种子，目前支持Annie简化主动、Olaf回血与缺血攻速，其他技能效果、移动、施法时序与弹道仍未模拟。动态排期采用明确说明的简化进度规则。星级语义待核验，不生成高星数据。关闭暴击时，重复同一战斗不会增加蒙特卡洛信息。
+
+Phase 5 examples and RNG assumptions / 暴击示例与随机规则：[critical-strikes.md](docs/critical-strikes.md)。相同输入、种子及模型环境可重放；不同种子不保证改变胜负，A/B位置交换也不保证逐场随机轨迹对应。
 
 Next, subject to phase-by-phase approval / 后续按阶段推进：
 
-- Reproducible randomness and selected, verifiable skills / 可复现随机性与可核验技能。
+- Review the user-run Annie active example, then expand only explicitly modeled skills / 查看用户Annie主动示例，再逐个扩展有明确模型说明的技能。
 - Monte Carlo summaries and confidence intervals / 批量模拟、统计摘要与置信区间。
 - Matchup matrices and controlled sensitivity experiments / 对战矩阵与受控敏感性分析。
 - Streamlit and automated CI / 交互应用与自动化质量流程。
 
-Equipment remains deferred. None of these roadmap items should be read as an implemented feature.
+Equipment remains deferred. Seeded critical strikes are implemented; the remaining roadmap items are not completed features.
 
-装备继续暂缓；以上均为计划，不是已完成功能。
+装备继续暂缓；已实现部分仅包括可选暴击与种子，其余路线内容仍为计划。
 
 ## Documentation / 进一步阅读
 
@@ -338,3 +346,13 @@ Equipment remains deferred. None of these roadmap items should be read as an imp
 This is an unofficial personal research project. TFT game data remains Riot Games' intellectual property. Riot Games does not endorse or sponsor this project. A future code license does not relicense third-party data or assets.
 
 本项目是非官方个人研究项目。TFT 游戏数据与相关资产的权利归 Riot Games 等对应权利方所有；本项目不受 Riot Games 背书或赞助。未来如为原创代码添加许可证，不代表第三方数据和资产一并重新授权。
+
+Olaf partial healing model / Olaf回血范围与结果：[olaf-healing.md](docs/olaf-healing.md)。
+
+Dynamic speed and scheduling / 动态攻速与排期：[dynamic-attack-speed.md](docs/dynamic-attack-speed.md)。
+
+Unified combat profiles and support scope / 统一入口与支持范围：[combat-profiles.md](docs/combat-profiles.md)。Experimental effect-percent scaling is available; exact client AP/AD formulas remain outside the implemented scope. 已有法强效果比例实验，尚未实现精确客户端法强/攻击力加成公式。
+
+Ability-power experiments / 法强实验规则与示例：[ability-power.md](docs/ability-power.md)。
+
+Phase 5 engineering validation / Phase 5工程验收范围与记录：[phase5-validation.md](docs/phase5-validation.md)。Phase 6 has not started. Phase 6尚未开始。

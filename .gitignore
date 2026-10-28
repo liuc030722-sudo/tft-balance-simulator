@@ -1,0 +1,43 @@
+# Local secrets and machine-specific configuration
+.env
+.env.*
+!.env.example
+.venv/
+.vscode/
+*.local
+# Python build and test output
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+build/
+dist/
+# Local data and generated analysis output
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+reports/figures/*
+!reports/figures/.gitkeep
+.ipynb_checkpoints/
+# Only explicitly approved, saved notebooks are included.
+*.ipynb
+!notebooks/1. data acquisition.ipynb
+!notebooks/2. data cleaning.ipynb
+!notebooks/3. database queries.ipynb
+!notebooks/4. basic combat.ipynb
+# Local backups and credentials are not project deliverables.
+backups/
+db_dumps/
+*.dump
+*.backup
+*.bak
+*.pem
+*.key
+*.p12
+*.pfx
+*.log
+Thumbs.db
+Desktop.ini

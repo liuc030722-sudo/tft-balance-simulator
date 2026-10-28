@@ -1,0 +1,2 @@
+# Preserve user-authored notebook bytes; do not normalize their line endings.
+notebooks/*.ipynb -text

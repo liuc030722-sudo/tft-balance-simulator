@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tft-balance-simulator"
+version = "0.1.0"
+description = "A TFT combat simulation and balance analysis framework (initial setup)."
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+dependencies = ["python-dotenv>=1.1,<2", "psycopg[binary]>=3.2,<4"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.3,<10"]
+notebook = ["ipykernel>=6.29,<8"]
+analysis = ["pandas>=2.2.3,<4"]
+
+[project.scripts]
+tft-check = "tft_simulator.environment:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
